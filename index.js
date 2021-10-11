@@ -1,13 +1,14 @@
 const http = require ('http');
-const {URL} = require ('url');
+
+const url = require ('url');
 
 const routes = require('./routes');
 
 const server = http.createServer ((request, response) =>{
-    const parsedUrl = new URL(`http://localhost:3000${request.url}`);
-    
-     console.log(`Request method: ${request.method} | Endpoint: ${parsedUrl.pathname}`);
-     let {pathname} = parsedUrl;
+    const parsedUrl = url.parse(request.url, true);
+    console.log(`Request method: ${request.method} | Endpoint: ${parsedUrl.pathname}`);
+
+     let { pathname } = parsedUrl;
      let id = null;
 
      const splitEndPoint = pathname.split('/').filter(Boolean);
@@ -18,15 +19,21 @@ const server = http.createServer ((request, response) =>{
          id = splitEndPoint[1];
      }
 
-    const route = routes.find((routeOBJ)=>(
-         routeOBJ.endpoint === parsedUrl.pathname && routeOBJ.method === request.method
+    const route = routes.find((routeOBJ) => (
+         routeOBJ.endpoint === pathname && routeOBJ.method === request.method
     ));
 
     if(route) {
         request.query = parsedUrl.query;
         request.params = { id };
 
+        response.send =(StatusCode, body ) => {
+            response.writeHead(StatusCode, {'Content-Type': 'application/json'});
+            response.end(JSON.stringify(body));
+        };
+
         route.handler(request, response);
+        UserController.listUsers(request, response);
     } else{
         response.writeHead(404, {'Content-Type': 'text/html'});
         response.end(`Cannot ${request.method} ${parsedUrl.pathname}`); 
