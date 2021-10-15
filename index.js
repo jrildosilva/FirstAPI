@@ -1,18 +1,18 @@
 const http = require ('http');
-
 const url = require ('url');
 
+const bodyParser = require('./helpers/bodyParser');
 const routes = require('./routes');
 
-const server = http.createServer ((request, response) =>{
+const server = http.createServer ((request, response) => {
     const parsedUrl = url.parse(request.url, true);
-    console.log(`Request method: ${request.method} | Endpoint: ${parsedUrl.pathname}`);
+    console.log(`request method: ${request.method} | Endpoint: ${parsedUrl.pathname}`);
 
      let { pathname } = parsedUrl;
      let id = null;
 
      const splitEndPoint = pathname.split('/').filter(Boolean);
-     console.log(splitEndPoint);
+     
 
      if (splitEndPoint.length > 1) {
          pathname = `/${splitEndPoint[0]}/:id`;
@@ -28,13 +28,18 @@ const server = http.createServer ((request, response) =>{
         request.params = { id };
 
         response.send =(StatusCode, body ) => {
-            response.writeHead(StatusCode, {'Content-Type': 'application/json'});
+            response.writeHead(StatusCode, { 'Content-Type': 'application/json' });
             response.end(JSON.stringify(body));
         };
 
-        route.handler(request, response);
-        UserController.listUsers(request, response);
-    } else{
+        if (['POST','PUT', 'PATCH'].includes(request.method)) {
+            bodyParser(request, ( ) =>  route.handler(request, response));
+        } else {
+            route.handler(request, response); 
+        }
+        
+       
+    }   else{
         response.writeHead(404, {'Content-Type': 'text/html'});
         response.end(`Cannot ${request.method} ${parsedUrl.pathname}`); 
     }
